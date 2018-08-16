@@ -5223,6 +5223,13 @@ public final class Settings {
          */
 
         /**
+         * Whether to show the battery info on the lockscreen while charging
+         * @hide
+         */
+        @Readable
+        public static final String LOCKSCREEN_BATTERY_INFO = "lockscreen_battery_info";
+
+        /**
          * Keys we no longer back up under the current schema, but want to continue to
          * process when restoring historical backup datasets.
          *
@@ -5342,7 +5349,27 @@ public final class Settings {
             PRIVATE_SETTINGS.add(SHOW_BATTERY_PERCENT);
             PRIVATE_SETTINGS.add(DISPLAY_COLOR_MODE);
             PRIVATE_SETTINGS.add(DISPLAY_COLOR_MODE_VENDOR_HINT);
+<<<<<<< HEAD
             PRIVATE_SETTINGS.add(TOUCHSCREEN_GESTURE_HAPTIC_FEEDBACK);
+=======
+            PRIVATE_SETTINGS.add(DOUBLE_TAP_SLEEP_LOCKSCREEN);
+            PRIVATE_SETTINGS.add(DOUBLE_TAP_SLEEP_GESTURE);
+            PRIVATE_SETTINGS.add(STATUSBAR_CLOCK);
+            PRIVATE_SETTINGS.add(STATUSBAR_CLOCK_STYLE);
+            PRIVATE_SETTINGS.add(STATUSBAR_CLOCK_SECONDS);
+            PRIVATE_SETTINGS.add(STATUSBAR_CLOCK_AM_PM_STYLE);
+            PRIVATE_SETTINGS.add(STATUSBAR_CLOCK_DATE_DISPLAY);
+            PRIVATE_SETTINGS.add(STATUSBAR_CLOCK_DATE_STYLE);
+            PRIVATE_SETTINGS.add(STATUSBAR_CLOCK_DATE_FORMAT);
+            PRIVATE_SETTINGS.add(STATUSBAR_CLOCK_DATE_POSITION);
+            PRIVATE_SETTINGS.add(POCKET_JUDGE);
+            PRIVATE_SETTINGS.add(VIBRATE_ON_CONNECT);
+            PRIVATE_SETTINGS.add(VIBRATE_ON_CALLWAITING);
+            PRIVATE_SETTINGS.add(VIBRATE_ON_DISCONNECT);
+            PRIVATE_SETTINGS.add(VOLUME_ROCKER_WAKE);
+            PRIVATE_SETTINGS.add(BACK_GESTURE_HAPTIC);
+            PRIVATE_SETTINGS.add(LOCKSCREEN_BATTERY_INFO);
+>>>>>>> d7289e4de61f... LockscreenCharging: squashed (1/3)
         }
 
         /**
