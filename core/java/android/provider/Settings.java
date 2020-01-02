@@ -5292,6 +5292,12 @@ public final class Settings {
         public static final String DOUBLE_TAP_SLEEP_GESTURE = "double_tap_sleep_gesture";
 
         /**
+         * Whether or not to vibrate when a touchscreen gesture is detected
+         * @hide
+         */
+        public static final String TOUCHSCREEN_GESTURE_HAPTIC_FEEDBACK = "touchscreen_gesture_haptic_feedback";
+
+        /**
          * Keys we no longer back up under the current schema, but want to continue to
          * process when restoring historical backup datasets.
          *
@@ -5429,6 +5435,7 @@ public final class Settings {
             PRIVATE_SETTINGS.add(DOUBLE_TAP_SLEEP_LOCKSCREEN);
             PRIVATE_SETTINGS.add(DOUBLE_TAP_SLEEP_GESTURE);
             PRIVATE_SETTINGS.add(VOLUME_BUTTON_MUSIC_CONTROL);
+            PRIVATE_SETTINGS.add(TOUCHSCREEN_GESTURE_HAPTIC_FEEDBACK);
         }
 
         /**
