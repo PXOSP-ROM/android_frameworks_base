@@ -5248,6 +5248,25 @@ public final class Settings {
         public static final String ALERT_SLIDER_NOTIFICATIONS = "alert_slider_notifications";
 
         /**
+         * Whether the phone vibrates on call waiting
+         * @hide
+         */
+        public static final String VIBRATE_ON_CALLWAITING = "vibrate_on_callwaiting";
+
+        /**
+         * Whether the phone vibrates on call connect
+         * @hide
+         */
+        public static final String VIBRATE_ON_CONNECT = "vibrate_on_connect";
+
+        /**
+         * Whether to vibrate on call state change
+         * Whether the phone vibrates on disconnect
+         * @hide
+         */
+        public static final String VIBRATE_ON_DISCONNECT = "vibrate_on_disconnect";
+
+        /**
          * Keys we no longer back up under the current schema, but want to continue to
          * process when restoring historical backup datasets.
          *
@@ -5367,27 +5386,11 @@ public final class Settings {
             PRIVATE_SETTINGS.add(SHOW_BATTERY_PERCENT);
             PRIVATE_SETTINGS.add(DISPLAY_COLOR_MODE);
             PRIVATE_SETTINGS.add(DISPLAY_COLOR_MODE_VENDOR_HINT);
-<<<<<<< HEAD
             PRIVATE_SETTINGS.add(TOUCHSCREEN_GESTURE_HAPTIC_FEEDBACK);
-=======
-            PRIVATE_SETTINGS.add(DOUBLE_TAP_SLEEP_LOCKSCREEN);
-            PRIVATE_SETTINGS.add(DOUBLE_TAP_SLEEP_GESTURE);
-            PRIVATE_SETTINGS.add(STATUSBAR_CLOCK);
-            PRIVATE_SETTINGS.add(STATUSBAR_CLOCK_STYLE);
-            PRIVATE_SETTINGS.add(STATUSBAR_CLOCK_SECONDS);
-            PRIVATE_SETTINGS.add(STATUSBAR_CLOCK_AM_PM_STYLE);
-            PRIVATE_SETTINGS.add(STATUSBAR_CLOCK_DATE_DISPLAY);
-            PRIVATE_SETTINGS.add(STATUSBAR_CLOCK_DATE_STYLE);
-            PRIVATE_SETTINGS.add(STATUSBAR_CLOCK_DATE_FORMAT);
-            PRIVATE_SETTINGS.add(STATUSBAR_CLOCK_DATE_POSITION);
-            PRIVATE_SETTINGS.add(POCKET_JUDGE);
+            PRIVATE_SETTINGS.add(LOCKSCREEN_BATTERY_INFO);
             PRIVATE_SETTINGS.add(VIBRATE_ON_CONNECT);
             PRIVATE_SETTINGS.add(VIBRATE_ON_CALLWAITING);
             PRIVATE_SETTINGS.add(VIBRATE_ON_DISCONNECT);
-            PRIVATE_SETTINGS.add(VOLUME_ROCKER_WAKE);
-            PRIVATE_SETTINGS.add(BACK_GESTURE_HAPTIC);
-            PRIVATE_SETTINGS.add(LOCKSCREEN_BATTERY_INFO);
->>>>>>> d7289e4de61f... LockscreenCharging: squashed (1/3)
         }
 
         /**
