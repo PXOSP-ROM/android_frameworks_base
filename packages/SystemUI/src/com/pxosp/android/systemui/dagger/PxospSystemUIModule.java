@@ -19,6 +19,8 @@ import com.google.android.systemui.smartspace.SmartSpaceController;
 import com.pxosp.android.systemui.smartspace.KeyguardSmartspaceController;
 
 import com.android.keyguard.KeyguardUpdateMonitor;
+import com.pxosp.android.systemui.theme.PxospThemeOverlayController;
+
 import com.android.keyguard.KeyguardViewController;
 import com.android.systemui.broadcast.BroadcastDispatcher;
 import com.android.systemui.dagger.qualifiers.Background;
@@ -71,6 +73,7 @@ import com.android.systemui.statusbar.policy.SensorPrivacyControllerImpl;
 import com.android.systemui.statusbar.policy.ZenModeController;
 import com.android.systemui.util.concurrency.DelayableExecutor;
 import com.android.systemui.volume.dagger.VolumeModule;
+import com.android.systemui.theme.ThemeOverlayController;
 
 import dagger.Binds;
 import dagger.Module;
@@ -207,6 +210,9 @@ public abstract class PxospSystemUIModule {
 
     @Binds
     abstract DozeHost provideDozeHost(DozeServiceHost dozeServiceHost);
+
+    @Binds
+    abstract ThemeOverlayController provideThemeOverlayController(PxospThemeOverlayController themeOverlayController);
 
     // Google
     @Provides
