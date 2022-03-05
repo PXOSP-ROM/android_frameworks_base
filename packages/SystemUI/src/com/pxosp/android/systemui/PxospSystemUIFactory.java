@@ -2,7 +2,6 @@ package com.pxosp.android.systemui;
 
 import android.content.Context;
 import android.content.res.AssetManager;
-import android.os.Handler;
 
 import com.pxosp.android.systemui.dagger.PxospGlobalRootComponent;
 import com.pxosp.android.systemui.dagger.PxospSysUIComponent;
