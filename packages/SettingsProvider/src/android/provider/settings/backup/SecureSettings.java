@@ -193,6 +193,7 @@ public class SecureSettings {
         Settings.Secure.LOCKSCREEN_SHOW_WALLET,
         Settings.Secure.LOCKSCREEN_USE_DOUBLE_LINE_CLOCK,
         Settings.Secure.TETHERING_ALLOW_VPN_UPSTREAMS,
-        Settings.Secure.STATUS_BAR_SHOW_VIBRATE_ICON
+        Settings.Secure.STATUS_BAR_SHOW_VIBRATE_ICON,
+	Settings.Secure.LAUNCHER_HIDDEN_APPS
     };
 }
