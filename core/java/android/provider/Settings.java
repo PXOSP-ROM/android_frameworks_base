@@ -5231,12 +5231,6 @@ public final class Settings {
         @Readable
         public static final String LOCKSCREEN_BATTERY_INFO = "lockscreen_battery_info";
 
-        /**
-         * Whether or not volume button music controls should be enabled to seek media tracks
-         * @hide
-         */
-        public static final String VOLBTN_MUSIC_CONTROLS = "volbtn_music_controls";
-
 	/**
          * Adaptive playback
          * Automatically pause media when the volume is muted and
