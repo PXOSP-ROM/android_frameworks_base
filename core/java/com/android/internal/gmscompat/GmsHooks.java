@@ -16,36 +16,30 @@
 
 package com.android.internal.gmscompat;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.ActivityManager.RunningAppProcessInfo;
-import android.app.ActivityThread;
 import android.app.Application;
-import android.app.Notification;
-import android.app.NotificationChannel;
-import android.app.NotificationChannelGroup;
-import android.app.NotificationManager;
 import android.app.compat.gms.GmsCompat;
-import android.content.ContentValues;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
+import android.database.MatrixCursor;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Process;
 import android.os.SystemClock;
+import android.provider.ContactsContract;
 import android.provider.Settings;
 import android.util.Log;
 import android.util.SparseArray;
 import android.webkit.WebView;
-
-import com.android.internal.R;
-import com.android.internal.gmscompat.dynamite.GmsDynamiteHooks;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 /**
- * API shims for Google Play compatibility. Hooks that are more complicated than a simple
+ * API shims for GMS compatibility. Hooks that are more complicated than a simple
  * constant return value should be delegated to this class for easier maintenance.
  *
  * @hide
@@ -53,56 +47,46 @@ import java.util.List;
 public final class GmsHooks {
     private static final String TAG = "GmsCompat/Hooks";
 
-    // Foreground service notifications
-    // id was chosen when fgs was the only channel
-    static final String COMPAT_GROUP_ID = "gmscompat_fgs_group";
-    private static volatile boolean notificationChannelsCreated;
-
-    // Static only
-    private GmsHooks() { }
-
-    static Notification.Builder obtainNotificationBuilder(Context context, String channelId) {
-        if (!notificationChannelsCreated) {
-            createNotificationChannels(context);
-            notificationChannelsCreated = true;
+    // ContextImpl#getSystemService(String)
+    public static boolean isHiddenSystemService(String name) {
+        // return true only for services that are null-checked
+        switch (name) {
+            case Context.CONTEXTHUB_SERVICE:
+            case Context.WIFI_SCANNING_SERVICE:
+            case Context.APP_INTEGRITY_SERVICE:
+            // used for factory reset protection
+            case Context.PERSISTENT_DATA_BLOCK_SERVICE:
+            // used for updateable fonts
+            case Context.FONT_SERVICE:
+                return true;
+            case Context.BLUETOOTH_SERVICE:
+                if (!hasNearbyDevicesPermission()) {
+                    return true;
+                }
         }
-
-        return new Notification.Builder(context, channelId);
+        return false;
     }
 
-    private static void createNotificationChannels(Context context) {
-        if (!GmsCompat.isPlayStore()) {
-            return;
+    // ApplicationPackageManager#hasSystemFeature(String, int)
+    public static boolean isHiddenSystemFeature(String name) {
+        switch (name) {
+            // checked before accessing privileged UwbManager
+            case "android.hardware.uwb":
+                return true;
+            case "android.hardware.bluetooth":
+            case "android.hardware.bluetooth_le":
+                if (!hasNearbyDevicesPermission()) {
+                    return true;
+                }
         }
-
-        NotificationManager manager = context.getSystemService(NotificationManager.class);
-        NotificationChannelGroup group = new NotificationChannelGroup(COMPAT_GROUP_ID,
-                context.getText(R.string.gmscompat_channel_group));
-        manager.createNotificationChannelGroup(group);
-
-        ArrayList<NotificationChannel> channels = new ArrayList<>(7);
-        PlayStoreHooks.createNotificationChannel(context, channels);
-
-        for (NotificationChannel channel : channels) {
-            channel.setGroup(COMPAT_GROUP_ID);
-        }
-
-        manager.createNotificationChannels(channels);
+        return false;
     }
 
-    // GMS tries to clean up its own notification channels periodically.
-    // Don't let it delete any of compat channels because that throws an exception and crashes GMS.
-    // NotificationManager#deleteNotificationChannel(String)
-    public static boolean skipDeleteNotificationChannel(String channelId) {
-        if (!GmsCompat.isEnabled()) {
-            return false;
-        }
-        return PlayStoreHooks.PUA_CHANNEL_ID.equals(channelId);
+    private static boolean hasNearbyDevicesPermission() {
+        // "Nearby devices" permission grants
+        // BLUETOOTH_CONNECT, BLUETOOTH_ADVERTISE and BLUETOOTH_SCAN, checking one is enough
+        return GmsCompat.hasPermission(Manifest.permission.BLUETOOTH_SCAN);
     }
-
-    /**
-     * API shims
-     */
 
     /**
      * Use the per-app SSAID as a random serial number for SafetyNet. This doesn't necessarily make
@@ -114,12 +98,7 @@ public final class GmsHooks {
     // Build#getSerial()
     @SuppressLint("HardwareIds")
     public static String getSerial() {
-        Application app = ActivityThread.currentApplication();
-        if (app == null) {
-            return Build.UNKNOWN;
-        }
-
-        String ssaid = Settings.Secure.getString(app.getContentResolver(),
+        String ssaid = Settings.Secure.getString(GmsCompat.appContext().getContentResolver(),
                 Settings.Secure.ANDROID_ID);
         String serial = ssaid.toUpperCase();
         Log.d(TAG, "Generating serial number from SSAID: " + serial);
@@ -127,18 +106,19 @@ public final class GmsHooks {
     }
 
     // Only get package info for current user
+    // ApplicationPackageManager#getInstalledPackages(int)
     // ApplicationPackageManager#getPackageInfo(VersionedPackage, int)
     // ApplicationPackageManager#getPackageInfoAsUser(String, int, int)
-    public static int getPackageInfoFlags(int flags) {
-        if (!GmsCompat.isEnabled()) {
-            return flags;
+    public static int filterPackageInfoFlags(int flags) {
+        if (GmsCompat.isEnabled()) {
+            // Remove MATCH_ANY_USER flag to avoid permission denial
+            flags &= ~PackageManager.MATCH_ANY_USER;
         }
-
-        // Remove MATCH_ANY_USER flag to avoid permission denial
-        return flags & ~PackageManager.MATCH_ANY_USER;
+        return flags;
     }
 
     // Instrumentation#newApplication(ClassLoader, String, Context)
+    // Instrumentation#newApplication(Class, Context)
     public static void initApplicationBeforeOnCreate(Application app) {
         GmsCompat.maybeEnable(app);
 
@@ -150,16 +130,15 @@ public final class GmsHooks {
                 WebView.setDataDirectorySuffix("process-shim--" + processName);
             }
 
-            if (GmsCompat.isPlayServices()) {
-                GmsDynamiteHooks.initGmsServerApp(app);
+            if (GmsCompat.isPlayStore()) {
+                PlayStoreHooks.init();
             }
+
             if (!Process.isIsolated()) {
                 GmsCompatApp.connect(app);
             } else {
-                Log.d(TAG, "initApplicationBeforeOnCreate: isolated process " + Application.getProcessName());
+                Log.d(TAG, "initApplicationBeforeOnCreate: isolated process " + processName);
             }
-        } else if (GmsCompat.isDynamiteClient()) {
-            GmsDynamiteHooks.initClientApp();
         }
     }
 
@@ -216,7 +195,7 @@ public final class GmsHooks {
     }
 
     // In some cases (Play Games Services, Play {Asset, Feature} Delivery)
-    // GMS relies on getRunningAppProcesses() to figure out whether its client is running.
+    // GMS Core relies on getRunningAppProcesses() to figure out whether its client is running.
     // This workaround is racy, because unprivileged apps don't know whether arbitrary pid is alive.
     // ActivityManager#getRunningAppProcesses()
     public static ArrayList<RunningAppProcessInfo> addRecentlyBoundPids(Context context,
@@ -260,4 +239,26 @@ public final class GmsHooks {
         }
         return res;
     }
+
+    // ContentResolver#query(Uri, String[], Bundle, CancellationSignal)
+    public static Cursor interceptQuery(Uri uri, String[] projection) {
+        if ("content://com.google.android.gms.phenotype/com.google.android.location".equals(uri.toString())) {
+            // keep PhenotypeFlags of the location service at their default values
+            // (updated flags degrade its speed and accuracy for unknown reasons)
+            return new MatrixCursor(projection);
+        }
+
+        String authority = uri.getAuthority();
+        if (ContactsContract.AUTHORITY.equals(authority)
+                // com.android.internal.telephony.IccProvider
+                || "icc".equals(authority))
+        {
+            if (!GmsCompat.hasPermission(Manifest.permission.READ_CONTACTS)) {
+                return new MatrixCursor(projection);
+            }
+        }
+        return null;
+    }
+
+    private GmsHooks() {}
 }
