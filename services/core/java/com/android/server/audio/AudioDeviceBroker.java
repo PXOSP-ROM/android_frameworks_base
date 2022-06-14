@@ -1502,13 +1502,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
                         onUpdatePhoneStrategyDevice(devices.isEmpty() ? null : devices.get(0));
                     }
                 } break;
-                case MSG_I_REMOVE_PREF_DEVICES_FOR_STRATEGY: {
-                    final int strategy = msg.arg1;
-                    removePreferredDevicesForStrategySync(strategy);
-                    if (strategy == mCommunicationStrategyId) {
-                        onUpdatePhoneStrategyDevice(null);
-                    }
-                } break;
                 case MSG_CHECK_MUTE_MUSIC:
                     checkMessagesMuteMusic(0);
                     break;
