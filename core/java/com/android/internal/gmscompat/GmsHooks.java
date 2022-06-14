@@ -18,17 +18,26 @@ package com.android.internal.gmscompat;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.Activity;
+import android.app.ActivityManager;
 import android.app.ActivityManager.RunningAppProcessInfo;
+import android.app.ActivityThread;
 import android.app.Application;
+import android.app.PendingIntent;
 import android.app.compat.gms.GmsCompat;
+import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.MatrixCursor;
 import android.net.Uri;
+import android.os.Bundle;
 import android.os.Process;
+import android.os.RemoteException;
 import android.os.SystemClock;
 import android.provider.ContactsContract;
+import android.provider.Downloads;
 import android.provider.Settings;
 import android.util.Log;
 import android.util.SparseArray;
@@ -47,6 +56,22 @@ import java.util.List;
 public final class GmsHooks {
     private static final String TAG = "GmsCompat/Hooks";
 
+    public static void init(Context ctx, String packageName) {
+        String processName = Application.getProcessName();
+
+        if (!packageName.equals(processName)) {
+            // Fix RuntimeException: Using WebView from more than one process at once with the same data
+            // directory is not supported. https://crbug.com/558377
+            WebView.setDataDirectorySuffix("process-shim--" + processName);
+        }
+
+        if (GmsCompat.isPlayStore()) {
+            PlayStoreHooks.init();
+        }
+
+        GmsCompatApp.connect(ctx, processName);
+    }
+
     // ContextImpl#getSystemService(String)
     public static boolean isHiddenSystemService(String name) {
         // return true only for services that are null-checked
@@ -59,10 +84,6 @@ public final class GmsHooks {
             // used for updateable fonts
             case Context.FONT_SERVICE:
                 return true;
-            case Context.BLUETOOTH_SERVICE:
-                if (!hasNearbyDevicesPermission()) {
-                    return true;
-                }
         }
         return false;
     }
@@ -73,19 +94,8 @@ public final class GmsHooks {
             // checked before accessing privileged UwbManager
             case "android.hardware.uwb":
                 return true;
-            case "android.hardware.bluetooth":
-            case "android.hardware.bluetooth_le":
-                if (!hasNearbyDevicesPermission()) {
-                    return true;
-                }
         }
         return false;
-    }
-
-    private static boolean hasNearbyDevicesPermission() {
-        // "Nearby devices" permission grants
-        // BLUETOOTH_CONNECT, BLUETOOTH_ADVERTISE and BLUETOOTH_SCAN, checking one is enough
-        return GmsCompat.hasPermission(Manifest.permission.BLUETOOTH_SCAN);
     }
 
     /**
@@ -115,31 +125,6 @@ public final class GmsHooks {
             flags &= ~PackageManager.MATCH_ANY_USER;
         }
         return flags;
-    }
-
-    // Instrumentation#newApplication(ClassLoader, String, Context)
-    // Instrumentation#newApplication(Class, Context)
-    public static void initApplicationBeforeOnCreate(Application app) {
-        GmsCompat.maybeEnable(app);
-
-        if (GmsCompat.isEnabled()) {
-            String processName = Application.getProcessName();
-            if (!app.getPackageName().equals(processName)) {
-                // Fix RuntimeException: Using WebView from more than one process at once with the same data
-                // directory is not supported. https://crbug.com/558377
-                WebView.setDataDirectorySuffix("process-shim--" + processName);
-            }
-
-            if (GmsCompat.isPlayStore()) {
-                PlayStoreHooks.init();
-            }
-
-            if (!Process.isIsolated()) {
-                GmsCompatApp.connect(app);
-            } else {
-                Log.d(TAG, "initApplicationBeforeOnCreate: isolated process " + processName);
-            }
-        }
     }
 
     static class RecentBinderPid implements Comparable<RecentBinderPid> {
@@ -242,12 +227,6 @@ public final class GmsHooks {
 
     // ContentResolver#query(Uri, String[], Bundle, CancellationSignal)
     public static Cursor interceptQuery(Uri uri, String[] projection) {
-        if ("content://com.google.android.gms.phenotype/com.google.android.location".equals(uri.toString())) {
-            // keep PhenotypeFlags of the location service at their default values
-            // (updated flags degrade its speed and accuracy for unknown reasons)
-            return new MatrixCursor(projection);
-        }
-
         String authority = uri.getAuthority();
         if (ContactsContract.AUTHORITY.equals(authority)
                 // com.android.internal.telephony.IccProvider
@@ -258,6 +237,89 @@ public final class GmsHooks {
             }
         }
         return null;
+    }
+
+    // Instrumentation#execStartActivity(Context, IBinder, IBinder, Activity, Intent, int, Bundle)
+    public static void onActivityStart(int resultCode, Intent intent, Bundle options) {
+        if (resultCode != ActivityManager.START_ABORTED) {
+            return;
+        }
+
+        // handle background activity starts, which normally require a privileged permission
+
+        Context ctx = GmsCompat.appContext();
+
+        PendingIntent pendingIntent = PendingIntent.getActivity(ctx, 0, intent,
+                PendingIntent.FLAG_IMMUTABLE, options);
+        try {
+            GmsCompatApp.iGms2Gca().startActivityFromTheBackground(ctx.getPackageName(), pendingIntent);
+        } catch (RemoteException e) {
+            GmsCompatApp.callFailed(e);
+        }
+    }
+
+    // Activity#onCreate(Bundle)
+    public static void activityOnCreate(Activity activity) {
+        if (GmsCompat.isGmsCore()) {
+            String className = activity.getClass().getName();
+            if ("com.google.android.gms.nearby.sharing.ShareSheetActivity".equals(className)) {
+                if (!hasNearbyDevicesPermission()) {
+                    try {
+                        GmsCompatApp.iGms2Gca().showGmsCoreMissingPermissionForNearbyShareNotification();
+                    } catch (RemoteException e) {
+                        GmsCompatApp.callFailed(e);
+                    }
+                }
+            }
+        }
+    }
+
+    // ContentResolver#insert(Uri, ContentValues, Bundle)
+    public static void filterContentValues(Uri url, ContentValues values) {
+        if (values != null && Downloads.Impl.CONTENT_URI.equals(url)) {
+            Integer otherUid = values.getAsInteger(Downloads.Impl.COLUMN_OTHER_UID);
+            if (otherUid != null) {
+                if (otherUid.intValue() != Process.SYSTEM_UID) {
+                    throw new IllegalStateException("unexpected COLUMN_OTHER_UID " + otherUid);
+                }
+                // gated by the privileged ACCESS_DOWNLOAD_MANAGER_ADVANCED permission
+                values.remove(Downloads.Impl.COLUMN_OTHER_UID);
+            }
+        }
+    }
+
+    // BluetoothAdapter#enable()
+    // BluetoothAdapter#enableBLE()
+    public static boolean canEnableBluetoothAdapter() {
+        if (GmsCompat.hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) {
+            return true;
+        }
+
+        if (ActivityThread.currentActivityThread().hasAtLeastOneResumedActivity()) {
+            String pkgName = GmsCompat.appContext().getPackageName();
+            try {
+                GmsCompatApp.iGms2Gca().showGmsMissingNearbyDevicesPermissionGeneric(pkgName);
+            } catch (RemoteException e) {
+                GmsCompatApp.callFailed(e);
+            }
+        } // else don't bother the user
+
+        return false;
+    }
+
+    private static boolean hasNearbyDevicesPermission() {
+        // "Nearby devices" permission grants
+        // BLUETOOTH_CONNECT, BLUETOOTH_ADVERTISE and BLUETOOTH_SCAN, checking one is enough
+        return GmsCompat.hasPermission(Manifest.permission.BLUETOOTH_SCAN);
+    }
+
+    // NfcAdapter#enable()
+    public static void enableNfc() {
+        if (ActivityThread.currentActivityThread().hasAtLeastOneResumedActivity()) {
+            Intent i = new Intent(Settings.ACTION_NFC_SETTINGS);
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            GmsCompat.appContext().startActivity(i);
+        }
     }
 
     private GmsHooks() {}

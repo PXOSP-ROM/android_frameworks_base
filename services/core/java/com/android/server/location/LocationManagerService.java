@@ -317,6 +317,13 @@ public class LocationManagerService extends ILocationManager.Stub implements
             }
         }
 
+        // Exempt system code in order to allow registering a real network provider
+        int uid = Binder.getCallingUid();
+        if (uid != Process.SYSTEM_UID && NETWORK_PROVIDER.equals(providerName)) {
+            Log.d(TAG, "replaced NETWORK with the PASSIVE provider for uid " + uid);
+            return mPassiveManager;
+        }
+
         return null;
     }
 
