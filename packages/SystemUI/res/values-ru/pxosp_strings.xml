@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+
+    <!-- Face Unlock -->
+    <string name="face_unlock_recognizing">Распознавание лица...</string>
+
+    <!-- Power Menu -->
+    <string name="global_action_reboot">Перезагрузка</string>
+    <string name="global_action_reboot_more">Перезагрузка\u2026</string>
+    <string name="global_action_reboot_sub">Система</string>
+    <string name="global_action_reboot_recovery">Режим восстановления</string>
+    <string name="global_action_reboot_bootloader">Загрузчик</string>
+    <string name="global_action_settings">Настройки</string>
+
+    <!-- Alert slider extras -->
+    <string name="volume_ringer_priority_only">Приоритет</string>
+    <string name="volume_ringer_alarms_only">Будильники</string>
+    <string name="volume_ringer_dnd">Не беспокоить</string>
+    <string name="tristate_flashlight">Фонарик</string>
+    <string name="tristate_flashlight_on">Фонарик включен</string>
+    <string name="tristate_flashlight_off">Фонарик выключен</string>
+    <string name="tristate_flashlight_blink">Мигание фонарика</string>
+    <string name="tristate_brightness_bright">Максимальная яркость</string>
+    <string name="tristate_brightness_dark">Минимальная яркость</string>
+    <string name="tristate_brightness_auto">Автояркость</string>
+    <string name="tristate_rotation_auto">Автоповорот</string>
+    <string name="tristate_rotation_0">Вертикальный</string>
+    <string name="tristate_rotation_90">Горизонтально (90°)</string>
+    <string name="tristate_rotation_270">Горизонтально (270°)</string>
+
+    <!-- Statusbar tuner -->
+    <string name="statusbar_items_title">Значки в строке состояния</string>
+
+    <!-- Reader mode QS tile -->
+    <string name="quick_settings_reading_mode">Режим чтения</string>
+    <string name="accessibility_quick_settings_reading_mode_on">Режим чтения включен.</string>
+    <string name="accessibility_quick_settings_reading_mode_off">Режим чтения выключен.</string>
+    <string name="accessibility_quick_settings_reading_mode_changed_on">Режим чтения активирован.</string>
+    <string name="accessibility_quick_settings_reading_mode_changed_off">Режим чтения деактивирован.</string>
+
+    <!-- Anti flicker QS tile -->
+    <string name="quick_settings_anti_flicker">Подавление мерцания</string>
+
+    <!-- Custom QS tiles -->
+    <string name="tap_to_add_tiles">Нажмите на плитки, чтобы добавить или удалить</string>
+
+</resources>
